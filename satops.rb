@@ -1,11 +1,11 @@
-#!/usr/bin/ruby -w
+#!/usr/bin/env ruby
 
 =begin
    * Name: satops
    * Description: RHN Satellite API Operator
    * Author: Gilles Dubreuil <gilles@redhat.com>
-   * Date: 20 Dec 2011 
-   * Version: 1.2
+   * Date: 20 Jun 2012 
+   * Version: 1.3
 =end
 
 =begin rdoc
@@ -33,34 +33,40 @@ require "logger"
 require "xmlrpc/client"
 require 'yaml'
 
-#  Because client certificate is not verified by server via net/http(s) every session generates:
-# "warning: peer certificate won't be verified in this SSL session"
-# This is to get rid of this warning: thanks to http://www.5dollarwhitebox.org/drupal/node/64
-class Net::HTTP
-  alias_method :old_initialize, :initialize
-  def initialize(*args)
-    old_initialize(*args)
-    @ssl_context = OpenSSL::SSL::SSLContext.new
-    @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+def overwrite_net_http
+  # https: Client certificate isn't verified by server so each session generates:
+  # "warning: peer certificate won't be verified in this SSL session"
+  # To get rid of this warning: thanks to http://www.5dollarwhitebox.org/drupal/node/64
+  Net::HTTP.class_eval do
+    alias_method :old_initialize, :initialize
+    def initialize(*args)
+      old_initialize(*args)
+      @ssl_context = OpenSSL::SSL::SSLContext.new
+      @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    end
   end
 end
 
 module RHN
   # Represent the RHN Satellite XML-RPC server
-  module Session 
-    attr_accessor :exception
-    
-    def self.running?(host) 
-      server=XMLRPC::Client.new2("https://#{host}/rpc/api", nil, 30)
+  module Session
+    @@path="/rpc/api" 
+
+    def self.running?(host, ssl)
+      server=XMLRPC::Client.new(host, @@path, nil, nil, nil, nil, nil, ssl, 30)
       server.call('api.getVersion')
     rescue Errno::ECONNREFUSED => e
-      puts "FATAL: #{host}: #{e}"
+      puts "FATAL: #{sat_host}: #{e}"
       exit
     end
 
-    def connect(user, password)
-      @server=XMLRPC::Client.new2("https://#{@host}/rpc/api", nil, 90)
-      @session=@server.call('auth.login', user, password)
+    # Instance methods
+
+    attr_accessor :exception
+    
+    def connect(sat)
+      @server=XMLRPC::Client.new(@host.name, @@path, nil, nil, nil, nil, nil, @ssl, 90)
+      @session=@server.call('auth.login', sat.login, sat.auth)
       @exception=nil
     end
     
@@ -163,13 +169,13 @@ module RHN
     def trace_info(*params)
       str=""
       params.each { |p| str << "#{p}:" } 
-      @sat.log.info("#{@sat.host}:#{str}")
+      @sat.log.info("#{@sat.host.name}:#{str}")
     end
 
     def trace_warn(*params)
       str=""
       params.each { |p| str << "#{p}:" } 
-      @sat.log.warn("#{@sat.host}:#{str}")
+      @sat.log.warn("#{@sat.host.name}:#{str}")
     end
   end
   
@@ -367,7 +373,7 @@ module RHN
 
     def get(name)
       action('kickstart.filepreservation.getDetails', name)
-    rescue RuntimeError => e # Workaround for bug 'cause empty
+    rescue RuntimeError # Workaround for bug 'cause empty
       return nil
     end
   end
@@ -550,13 +556,13 @@ module RHN
 
   # Interface to Red Hat Network Satellite API
   # Can be invoked with satellite object : sat.channel.create()
-  # TO DO:  metaprogramming.
   class Satellite
     include Session
     attr_reader :host, :log, :activationkey, :channel, :channelSoftware, :configchannel, :kickstart, :kickstartFilepreservation, :kickstartProfile, :kickstartProfileSystem, :kickstartProfileSoftware, :kickstartKeys, :kickstartSnippet, :system, :systemConfig, :systemCustominfo, :systemgroup, :user
 
-    def initialize(host, log)
-      @host=host 
+    def initialize(sat_host, ssl, log)
+      @host=sat_host
+      @ssl=ssl
       @log=log
       @session=nil
       @activationkey=Activationkey.new(self)
@@ -591,7 +597,7 @@ module Helpers
   end
 end
 
-class Config
+class Configuration
   attr_reader :source, :target
 end
 
@@ -656,7 +662,7 @@ class Operation
     @family=Kernel.const_get(self.class.to_s+'Set')
     @log=log
     @log.info "Init #{self.class.to_s}"
-   end
+  end
 
   def create(sat)
     @family.class_eval { return self.new(sat) }
@@ -781,8 +787,7 @@ class Channels < Operation
       raise "Fatal: ISS Failed" if @result.chomp.reverse[0,1] != '0'
     end
   rescue RuntimeError => e
-    puts @log
-    exit
+    @log.fatal "#{e}" 
   end
 end
 
@@ -1113,7 +1118,7 @@ class Configchannel
     sat.configchannel.update(@label, @name, @description)
 
     @file_revisions.each do |cfg_file, revisions| 
-      dst_cfg_files=sat.configchannel.deleteFiles(@label, [cfg_file])
+    #  dst_cfg_files=sat.configchannel.deleteFiles(@label, [cfg_file])
       revisions.each do |file_revision| 
         set_files(sat, file_revision)
       end
@@ -1704,15 +1709,15 @@ class User
   end
 
   def create(sat)
+   @use_pam
     if @use_pam
-      pam=1
+      sat.user.create(@login, "", @first_name, @last_name, @email, 1)
     else
-      pam=0
       # When creating user on target, the passwor comes from configuration
       # because there no API to read it. 
       password=Users.password
+      sat.user.create(@login, password, @first_name, @last_name, @email, 0)
     end
-    sat.user.create(@login, password, @first_name, @last_name, @email, pam)
     common_update(sat)
   end
 
@@ -1927,6 +1932,9 @@ SHOW_OPTION
   sat | config
 
 [OPTIONS] 
+  --ssl
+   Activate SSL (HTTPS) communication
+
   -d, --debug
    Activate debug output
  
@@ -1935,6 +1943,9 @@ SHOW_OPTION
 
   -l, --log
    Append logs to file. By default logs go to Standard Output
+
+  -w
+   Activate Ruby Verbose 
 
 Examples
   # Synchronisation operation, logs to standard output
@@ -2015,7 +2026,7 @@ eof
 #
 # Do not remove any line
 # Change only login and passwd values
---- !ruby/object:Config 
+--- !ruby/object:Configuration 
 source: !ruby/object:Host 
   name: sat1.example.org
   user: 
@@ -2040,15 +2051,15 @@ eof
   end
 
   def init_source
-    RHN::Session.running?(@sat_config.source.name) 
-    @sat_source=RHN::Satellite.new(@sat_config.source.name, @log)
-    @sat_source.connect(@sat_config.source.login, @sat_config.source.auth)
+    RHN::Session.running?(@sat_config.source.name, @ssl) 
+    @sat_source=RHN::Satellite.new(@sat_config.source, @ssl, @log)
+    @sat_source.connect(@sat_config.source)
   end
   
   def init_target
-    RHN::Session.running?(@sat_config.target.name) 
-    @sat_target=RHN::Satellite.new(@sat_config.target.name, @log)
-    @sat_target.connect(@sat_config.target.login, @sat_config.target.auth)
+    RHN::Session.running?(@sat_config.target.name, @ssl) 
+    @sat_target=RHN::Satellite.new(@sat_config.target, @ssl, @log)
+    @sat_target.connect(@sat_config.target)
   end
 
   def initialize(params)
@@ -2060,6 +2071,7 @@ eof
     @sat_file=nil
     @sat_source=nil
     @sat_target=nil
+    @ssl=false
 
     unless (params.include?('-s') && params.include?('-c')) || params.include?('show')
       Launcher.usage
@@ -2074,12 +2086,17 @@ eof
         $DEBUG=true
       when '-h', '--help'
         Launcher.usage
+      when '--ssl'
+        @ssl=true
+        overwrite_net_http
       when '-l', '--log=' 
         params.shift
         @log_file=params[0]
       when '-s', '--satfile=' 
         params.shift
         @sat_file=params[0]
+      when '-w' 
+        $VERBOSE=true
       when 'clone'
         operation_size?(params, 3)
         @command='clone'
