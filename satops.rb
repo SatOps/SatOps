@@ -1739,7 +1739,7 @@ class UsersSet < OperationSet
       list.delete_if { |u| u == exclude }
     end
     list.each do |user|
-      @sat.user.delete(user)
+      @sat.user.delete(user.login)
     end
   end
 
