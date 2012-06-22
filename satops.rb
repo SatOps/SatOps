@@ -5,7 +5,7 @@
    * Description: RHN Satellite API Operator
    * Author: Gilles Dubreuil <gilles@redhat.com>
    * Date: 22 Jun 2012 
-   * Version: 1.3.1
+   * Version: 1.3.2
 =end
 
 =begin rdoc
@@ -1906,10 +1906,10 @@ COMMAND
 
   Commands explanation
     destroy: Delete all objects on target RHN Satellite
-  
-    extras: Remove objects on target RHN Satellite not present in source RHN Satellite
-  
+    
     export: Export RHN Satellite objects to files (ascci or binary formats) into <path> directory
+
+    extras: Remove objects on target RHN Satellite not present in source RHN Satellite
 
     import: Import RHN Satellite object from files (ascii or binary) located into <path> directory
   
@@ -1919,22 +1919,17 @@ COMMAND
 
     show: Generate configuration file examples
 
-  Remember
-    - Source RHN Satellite is never modified and Target RHN Satellite is most likely to be modified when using extras, import or sync commands
-
-    - Operations are executed on object groups only if present (or uncommented) in configuration file 
-
 FORMAT
-  bin | ascii
-    - Bin: Marshalling
+  ascii | bin
     - Ascii: YAML
+    - Bin: Marshalling
 
 SHOW_OPTION
   sat | config
 
 [OPTIONS] 
   --ssl
-   Activate SSL (HTTPS) communication
+   Activate SSL (HTTPS) sessions
 
   -d, --debug
    Activate debug output
@@ -1945,18 +1940,26 @@ SHOW_OPTION
   -l, --log
    Append logs to file. By default logs go to Standard Output
 
-  -w
+  -w, --warnings
    Activate Ruby Verbose 
 
 Examples
-  # Synchronisation operation, logs to standard output
-  ./satops.rb -s satellites.config -c config sync
+  # Synchronisation operation with logs to standard output
+  ./satops.rb -s satellites -c config sync
 
-  # Export operation and file logs
-  ./satops.rb -s satellites.config -c config -l export.log export ascii /tmp/satops-export/
+  # Export operation in ASCII format with logs to file
+  ./satops.rb -s satellites -c config -l export.log export ascii /tmp/satops-export/
 
-  # Import operation and file logs
-  ./satops.rb -s satellites.config -c config -l import.log import ascii /tmp/satops-export/
+  # Import operation from ASCII format with logs to file
+  ./satops.rb -s satellites -c config -l import.log import ascii /tmp/satops-export/
+
+  # Destroy operation with logs to standard output
+  ./satops.rb -s satellites -c config destroy
+
+Notes
+    - Source RHN Satellite is never modified 
+    - Target RHN Satellite is most likely to be modified
+    - Operations are executed on object groups only if present (or uncommented) in configuration file 
 eof
 
 @@config_syntax = <<eof
@@ -2096,7 +2099,7 @@ eof
       when '-s', '--satfile=' 
         params.shift
         @sat_file=params[0]
-      when '-w' 
+      when '-w', '--warnings' 
         $VERBOSE=true
       when 'clone'
         operation_size?(params, 3)
@@ -2141,7 +2144,7 @@ eof
         when 'config'
           puts @@config_syntax
         else
-          puts "Use 'show sat' or 'show config' options"
+          puts "Use 'show sat' or 'show config' commands"
         end
         exit
       else
