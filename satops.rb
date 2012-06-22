@@ -774,7 +774,7 @@ class Channels < Operation
       all_channels=Helpers.filter(src_sat.channel.listAllChannels, 'label').sort
       @result=nil
       3.times do
-        iss_cmd="/usr/bin/ssh -q root@#{dst_sat.host} '/usr/bin/satellite-sync "
+        iss_cmd="/usr/bin/ssh -q root@#{dst_sat.host.name} '/usr/bin/satellite-sync "
         all_channels.each do |e|
           iss_cmd << "-c #{e} " 
         end  
@@ -2033,7 +2033,7 @@ source: !ruby/object:Host
     :login: admin
     :passwd: redhat
 target: !ruby/object:Host 
-  name: sat2.exmaple.org
+  name: sat2.example.org
   user: 
     :login: admin
     :passwd: redhat
