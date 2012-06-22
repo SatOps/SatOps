@@ -73,15 +73,16 @@ module RHN
     def get(command)
       self.exec_async(command)
     end
-
+    
     def run(command, *params)
+      @log.debug("API-CALL:#{command} => #{params.inspect}")  
       self.exec_async(command, @session, *params)
     end
 
     def exec(*params) # command, session 
       begin
         result=@server.call(*params)
-        @log.debug "Result=#{result}"
+        @log.debug("API-RETURN => #{params.inspect}")  
       rescue XMLRPC::FaultException => e
         @exception=e
         @log.debug e.faultCode.to_s+':' + e.faultString
@@ -91,9 +92,9 @@ module RHN
 
     # Async call will reconnect if needed
     def exec_async(*params)  # command, session 
-      begin
+      begin 
         result=@server.call_async(*params)
-        @log.debug "Result=#{result}" 
+        @log.debug("API-RETURN:#{params.inspect}")  
       rescue XMLRPC::FaultException => e
         @exception=e
         @log.debug e.faultCode.to_s+':' + e.faultString
