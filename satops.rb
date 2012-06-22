@@ -4,8 +4,8 @@
    * Name: satops
    * Description: RHN Satellite API Operator
    * Author: Gilles Dubreuil <gilles@redhat.com>
-   * Date: 20 Jun 2012 
-   * Version: 1.3
+   * Date: 22 Jun 2012 
+   * Version: 1.3.1
 =end
 
 =begin rdoc
