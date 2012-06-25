@@ -1,0 +1,133 @@
+NAME
+       satops - Manipulate Red Hat Network Satellite content via its XML/RPC API
+
+SYNOPSIS
+       satops show sat|config
+       satops -s <satellites file> -c <config file> [-dltw] destroy
+       satops -s <satellites file> -c <config file> [-dltw] export <directory> ascii | bin
+       satops -s <satellites file> -c <config file> [-dltw] import <directory> ascii | bin
+       satops -s <satellites file> -c <config file> [-dltw] run <Ruby file>
+       satops -s <satellites file> -c <config file> [-dltw] extras
+       satops -s <satellites file> -c <config file> [-dltw] sync
+       satops [-h]
+
+DESCRIPTION 
+       The satops tool makes extensive use of the Red Hat Network Satellite (RHN Satellite) XML/RPC API to provide automated tasks.
+       Those tasks help manipulating RHN Satellite content, mainly Standard Operating Environment (SOE) data.
+       The primary goal of the tool is to offer and Primary/Secondary architecture to complement the RHN Satellite product.
+       This allow to have multiples RHN Satellites in sync. For instance a production and DR in active/active mode.
+
+       A provide a configuration file for satOps options:
+       To specify objects to operate, by default all objects are deactivated
+       Use 'show config' command to generate example
+
+       The available commands are:
+              destroy
+                  Delete all objects on target RHN Satellite
+    
+              export
+                  Export RHN Satellite objects to files (ascci or binary formats) into <path> directory
+
+              extras
+                  Remove objects on target RHN Satellite not present in source RHN Satellite
+          
+              import
+                  Import RHN Satellite object from files (ascii or binary) located into <path> directory
+  
+              run
+                  Execute Ruby 'plug-in' file 
+
+              sync
+                 Synchronise objects from source RHN Satellite to target RHN Satellite
+                 Equivalent of export/import but in one go
+
+              show
+
+       Notes
+            The Source RHN Satellite is never modified 
+
+            The Target RHN Satellite is most likely to be modified
+
+       Operations are executed on object groups only if present (or uncommented) in configuration file 
+
+
+       Export/Import 
+            The directory to export data to or from must exist
+
+COMMAND LINE OPTIONS
+       -d, --debug
+              Activate debug output
+ 
+       -h, --help
+              This help
+
+       -l, --log
+              Append logs to file. By default logs go to Standard Output
+
+       -t, --tls
+              Activate Secure (HTTPS) sessions
+
+       -w, --warnings
+              Activate Ruby Verbose 
+
+       Import/Export command
+          ascii | bin
+          - ASCII: YAML
+          - Bin: Marshalling
+
+SHOW_OPTION
+  sat | config
+
+SATELLITES
+  -s SAT-FILE, --satconfig=SAT-FILE
+
+   SAT-FILE
+     YAML formated file providing Satellite details:
+     Use 'show sat' command to generate template
+      
+CONFIG
+  -c CONFIG-FILE, --config=CONFIG-FILE
+
+   CONFIG-FILE
+     YAML formated file providing configuration options:
+     Use 'show config' command to generate template
+
+The above commands can be applied on RHN Satellite objects such as:
+  Activation keys
+  Software Channels
+  Configuration channels
+  Kickstarts
+  Kickstart File preservations
+  Kickstart Keys
+  Kickstart Snippets
+  Systems
+  System custom information
+  System groups and Users
+
+The config' file determines which objects to run or not.
+
+The SatOps interfaces with up to two RHN Satellite servers, a Source and a Target:
+  A Source Satellite is used to read data from and therefore is NEVER modified.
+  A Target Satellite is the destination of data and therefore OFTEN modified.
+Some commands only require one Satellite server to be provided.
+For instance "export" command only need a Source while "import" or "destroy" commands require a Target only.
+
+EXAMPLES
+       # Generate config options example:
+       ./satops.rb show config
+
+       # Run synchronisation operation with logs to standard output
+       ./satops.rb -s satellites -c config sync
+
+       # Run ASCII export  operation with logs to file
+       ./satops.rb -s satellites -c config -l export.log export ascii /tmp/satops-export/
+
+       # Run binary import operation with logs to file
+       ./satops.rb -s satellites -c config -l import.log import bin /tmp/satops-export/
+
+       # Destroy operation with logs to standard output
+       ./satops.rb -s satellites -c config destroy
+
+       # Run extra operation 
+       ./satops.rb -s satellites -c config extras
+

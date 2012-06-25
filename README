@@ -1,82 +1,36 @@
-THE IDEA
---------
-To excecutes commands on Red Hat Network Satellite objects using its XML/RPC API interface.
- 
-Available commands are:
-  destroy: Delete RHN Satellite objects on target 
-  export: Extract RHN Satellite objects to files (bin or ascii)
-  import: Inject exported object into RHN Satellite
-  sync: Equivalent of export/import but in one go, directly from Satellite to Satellite.
-  extra: To complement sync with the possibilty to manipulate,
-         mostly destroy objects that are not supposed to be there.
-         The idea behind is a Master/Slaves architecture of Satellite servers.
-  clone: Under Development: 
-         The idea is to clone RHN Satellite objects with all dependencies.
+SatOps
+------
+Excecutes predifined commands on Red Hat Network Satellite objects using its XML/RPC API interface
+
+QUICKSTART
+----------
+1 - Generate source and target satellites definitions file
+2 - Generate configuration file
+3 - Launch satops. For instance to sync a target satellite from a source
+
+./satops.rb show sat > satellites.yaml
+./satops.rb show config > config.yaml
+./satops.rb -s satellites.yaml -c config.yaml sync
+
+HOWTO
+-----
+For short version help, run satops without option
+For more details, please refer to the included MANUAL
+
+DEVELOPMENT
+-----------
+  clone command:
+         To be able to clone RHN Satellite objects with all their dependencies.
          For instance replicate a clone based channel along its childs channel in one go.
 	 Much faster than with WebGUI!  
-  run: Sort of plugin to run any set of instructions on a Satellite
-       Requires Ruby coding.
-       This is powerful and therefore dangerous!
-  show: Generate configuration file examples
 
+LICENCE
+-------
+See COPYING file
 
-The above commands can be applied on RHN Satellite objects such as:
-  Activation keys
-  Software Channels
-  Configuration channels
-  Kickstarts 
-  Kickstart File preservations
-  Kickstart Keys
-  Kickstart Snippets
-  Systems
-  System custom information
-  System groups and Users
-
-The config' file determines which objects to run or not.
-
-The SatOps interfaces with up to two RHN Satellite servers, a Source and a Target:
-  A Source Satellite is used to read data from and therefore is NEVER modified.
-  A Target Satellite is the destination of data and therefore OFTEN modified.
-Some commands only require one Satellite server to be provided. 
-For instance "export" command only need a Source while "import" or "destroy" commands require a Target only.
-
-HOW TO USE IT?
---------------
-Run the satOps with--help to get commands list and syntax
-
-You must always provide a file with satellite servers details such as hostname, user and password.
-   Use 'show sat' command to geneate example
-
-You must always provide a configuration file for satOps options:
-   To specify objects to operate, by default all objects are deactivated
-   Use 'show config' command to generate example
-
-So the generic command to run would be: 
-  # satOps.rb -s satconfig-file -c <config-file> <command> [command parameters]
-
-Examples:
-  Run an ascii export:
-  # /usr/local/bin/satOps/satOps.rb -s satconfig.yaml -c config.yaml export ascii my-export-folder
-
-  Run an ascii import:
-  # /usr/local/bin/satOps/satOps.rb -s satconfig.yaml -c config.yaml export ascii my-export-folder
-
-  Run a synchronisation:
-  # /usr/local/bin/satOps/satOps.rb -s satconfig.yaml -c config.yaml sync
-
-  Generate config options example:
-  # /usr/local/bin/satOps/satOps.rb -s satconfig.yaml -c config.yaml show config
-
-
-TO DO
------
-Unit Tests
-A Ruby gem
 
 CONTACTS
 --------
 Gilles   Dubreuil - gilles@redhat.com
 Aurelien Gouny    - aurelien@redhat.com
-
-
 

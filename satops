@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+@@version='1.3.3'
 =begin header
    * Name: satops
    * Description: RHN Satellite API Operator
@@ -71,7 +72,7 @@ module RHN
       server=XMLRPC::Client.new(host, @@path, nil, nil, nil, nil, nil, ssl, 30)
       server.call('api.getVersion')
     rescue Errno::ECONNREFUSED => e
-      puts "FATAL: #{sat_host}: #{e}"
+      puts "FATAL: #{host}: #{e}"
       exit
     end
 
@@ -468,6 +469,40 @@ module RHN
     end
   end
 
+  class Org < Operation
+    def initialize(sat)
+      super(sat) 
+      define 'org.create'
+      define 'org.delete', :boolean
+      define 'org.getDetails'
+      define 'org.listOrgs', :list
+      define 'org.listSoftwareEntitlements', :list
+      define 'org.listSoftwareEntitlementsForOrg', :list
+      define 'org.listSystemEntitlements', :list
+      define 'org.listSystemEntitlementsForOrg', :list
+      define 'org.listUsers', :list
+      define 'org.migrateSystems'
+      define 'org.setSoftwareEntitlements', :boolean
+      define 'org.setSoftwareFlexEntitlements', :boolean
+      define 'org.setSystemEntitlements', :boolean
+      define 'org.updateName'
+    end
+  end  
+ 
+  class OrgTrust < Operation
+    def initialize(sat)
+      super(sat) 
+      define 'org.trusts.addTrust', :boolean
+      define 'org.trusts.getDetails', :list
+      define 'org.trusts.listChannelsConsumed', :list
+      define 'org.trusts.listChannelsProvided', :list
+      define 'org.trusts.listOrgs', :list
+      define 'org.trusts.listSystemsAffected', :list
+      define 'org.trusts.listTrusts', :list
+      define 'org.trusts.removeTrust', :boolean
+    end
+  end  
+
   class System < Operation   
     def initialize(sat)
       super(sat)
@@ -574,7 +609,7 @@ module RHN
   # Can be invoked with satellite object : sat.channel.create()
   class Satellite
     include Session
-    attr_reader :host, :log, :activationkey, :channel, :channelSoftware, :configchannel, :kickstart, :kickstartFilepreservation, :kickstartProfile, :kickstartProfileSystem, :kickstartProfileSoftware, :kickstartKeys, :kickstartSnippet, :system, :systemConfig, :systemCustominfo, :systemgroup, :user
+    attr_reader :host, :log, :activationkey, :channel, :channelSoftware, :configchannel, :kickstart, :kickstartFilepreservation, :kickstartProfile, :kickstartProfileSystem, :kickstartProfileSoftware, :kickstartKeys, :kickstartSnippet, :org, :orgTrust, :system, :systemConfig, :systemCustominfo, :systemgroup, :user
 
     def initialize(sat_host, ssl, log)
       @host=sat_host
@@ -592,6 +627,8 @@ module RHN
       @kickstartProfileSoftware=KickstartProfileSoftware.new(self)
       @kickstartKeys=KickstartKeys.new(self)
       @kickstartSnippet=KickstartSnippet.new(self)
+      @org=Org.new(self)
+      @orgTrust=OrgTrust.new(self)
       @system=System.new(self)
       @systemConfig=SystemConfig.new(self)
       @systemCustominfo=SystemCustominfo.new(self)
@@ -828,6 +865,12 @@ class KickstartKeys < Operation
 end
 
 class KickstartSnippets < Operation
+end
+
+class Orgs < Operation
+end
+
+class OrgTrusts < Operation
 end
 
 class Systems < Operation
@@ -1483,6 +1526,123 @@ class KickstartSnippetsSet < OperationSet
   end
 end
 
+class Org
+  attr_reader :id, :name
+
+  def self.reader(sat, id)
+    org={}
+    org.merge!(sat.org.getDetails(id))
+    org.merge!({'users'=>sat.org.listUsers(id)})
+    org.merge!({'system_entitlements'=>sat.org.listSystemEntitlementsForOrg(id)})
+    org.merge!({'software_entitlements'=>sat.org.listSoftwareEntitlementsForOrg(id)})
+    org
+  end
+    
+  def initialize(org)
+    @id=org['id'] 
+    @name=org['name'] 
+    @active_users=org['active_users'] # Number of active users in the organization.
+    @systems=org['systems'] # Number of systems in the organization.
+    @trusts=org['trusts'] # Number of trusted organizations.
+    @system_groups=org['system_groups'] # Number of system groups in the organization. (optional)
+    @activation_keys=org['activation_keys'] # Number of activation keys in the organization. (optional)
+    @kickstart_profiles=org['kickstart_profiles'] # Number of kickstart profiles in the organization. (optional)
+    @configuration_channels=org['configuration_channels'] # Number of configuration channels in the organization. (optional)
+    @system_entitlements=org['system_entitlements']
+    @software_entitlements=org['software_entitlements']
+  end
+
+  def delete(sat)
+    sat.org.delete(@id)
+  end
+
+  def create(sat)
+    # Cannot Export Organization admin details
+    # sat.org.create(@name, @adminLogin, ... )
+  end
+
+  def update(sat)
+    self.create(sat)
+  end
+end
+
+class OrgsSet < OperationSet
+  def delete(list)
+    list=[list] if list.class != Array
+    list.each do |org|
+      @sat.org.delete(org)
+    end
+  end
+
+  def delete_all
+    delete(@sat.org.listOrgs)
+  end
+
+  def fetch_all
+    orgs=[]
+    @sat.org.listOrgs.each do |org|
+      orgs << Org.new(Org.reader(@sat, org['id']))
+    end
+    orgs
+  end
+
+  def include?(arg)
+    self.include_id?(arg)
+  end
+end
+
+class OrgTrust
+  attr_reader :id
+
+  def self.reader(sat, org)
+    org_trust={}
+    org_trust.merge!(org)
+    org_trust.merge!(sat.orgTrust.getDetails(org['org_id']))
+    org_trust
+  end
+    
+  def initialize(org)
+    @id=org['org_id']
+    @name=org['org_name']
+    @channels_provided=org['channels_provided']
+    @systems_migrated_from=org['systems_migrated_from']
+    @systems_migrated_to=org['systems_migrated_to']
+    @channels_consumed=org['channels_consumed']
+    @channels_provided=org['channels_provided']
+    @created=org['created']
+    @trusted_since=org['trusted_since']
+  end
+
+  def delete(sat)
+  end
+
+  def create(sat)
+  end
+
+  def update(sat)
+  end
+end
+
+class OrgTrustsSet < OperationSet
+  def delete(list)
+  end
+
+  def delete_all
+  end
+
+  def fetch_all
+    orgs=[]
+    @sat.orgTrust.listOrgs.each do |org|
+      orgs << OrgTrust.new(OrgTrust.reader(@sat, org))
+    end
+    orgs
+  end
+
+  def include?(arg)
+    self.include_id?(arg)
+  end
+end
+
 class System 
   attr_reader :id
 
@@ -1814,7 +1974,9 @@ class SatOperator
   attr_reader :source, :target, :operations
   
   # Operations are ordered - It matters for object dependencies
-  OPS = [Systemgroups,
+  OPS = [Orgs,
+         OrgTrusts,
+         Systemgroups,
          Configchannels,
          SystemCustominfos,
          Systems,
@@ -1898,83 +2060,38 @@ end
 
 class Launcher
   @@syntax = <<eof 
-Usage:
-#{File.basename($0)} SAT CONFIG [OPTIONS] COMMAND
+satops #{@@version}
 
-where:
-SAT
-  -s SAT-FILE, --satconfig=SAT-FILE
+Usage: 
+ satops show sat | config
+ satops -s <satellites file> -c <config file> [-dltw] destroy
+ satops -s <satellites file> -c <config file> [-dltw] export <directory> ascii | bin
+ satops -s <satellites file> -c <config file> [-dltw] import <directory> ascii | bin
+ satops -s <satellites file> -c <config file> [-dltw] run <Ruby file>
+ satops -s <satellites file> -c <config file> [-dltw] extras
+ satops -s <satellites file> -c <config file> [-dltw] sync
+ satops [-h]
 
-   SAT-FILE
-     YAML formated file providing Satellite details:
-     Use 'show sat' command to generate template
-      
-CONFIG
-  -c CONFIG-FILE, --config=CONFIG-FILE
+Mandatory Configuration files:
+ Satellites file: Source and Target RHN Satellites definition
+ Configuration file: RHN Satellite Objects are not treated unless present in the configuration file
+ Use 'show sat|config' command for generating either templates
+Options:
+ -d, --debug        Activate debug output
+ -l, --log          Append logs to file. By default logs go to Standard Output
+ -t, --tls          Activate SSL (HTTPS) sessions
+ -w, --warnings     Activate Ruby Verbose 
 
-   CONFIG-FILE
-     YAML formated file providing configuration options:
-     Use 'show config' command to generate template
- 
-COMMAND
-  destroy | export FORMAT <path> | extras | import FORMAT <path> | run <file> | sync | show SHOW_OPTION
+ -h, --help         Display Version number, help and exit
 
-  Commands explanation
-    destroy: Delete all objects on target RHN Satellite
-    
-    export: Export RHN Satellite objects to files (ascci or binary formats) into <path> directory
-
-    extras: Remove objects on target RHN Satellite not present in source RHN Satellite
-
-    import: Import RHN Satellite object from files (ascii or binary) located into <path> directory
-  
-    run: Execute Ruby 'plug-in' file 
-
-    sync: Synchronise object from source RHN Satellite to target RHN Satellite
-
-    show: Generate configuration file examples
-
-FORMAT
-  ascii | bin
-    - Ascii: YAML
-    - Bin: Marshalling
-
-SHOW_OPTION
-  sat | config
-
-[OPTIONS] 
-  --ssl
-   Activate SSL (HTTPS) sessions
-
-  -d, --debug
-   Activate debug output
- 
-  -h, --help
-   This help
-
-  -l, --log
-   Append logs to file. By default logs go to Standard Output
-
-  -w, --warnings
-   Activate Ruby Verbose 
-
-Examples
-  # Synchronisation operation with logs to standard output
-  ./satops.rb -s satellites -c config sync
-
-  # Export operation in ASCII format with logs to file
-  ./satops.rb -s satellites -c config -l export.log export ascii /tmp/satops-export/
-
-  # Import operation from ASCII format with logs to file
-  ./satops.rb -s satellites -c config -l import.log import ascii /tmp/satops-export/
-
-  # Destroy operation with logs to standard output
-  ./satops.rb -s satellites -c config destroy
-
-Notes
-    - Source RHN Satellite is never modified 
-    - Target RHN Satellite is most likely to be modified
-    - Operations are executed on object groups only if present (or uncommented) in configuration file 
+Commands:
+ destroy Delete all objects on target RHN Satellite  
+ export  Export RHN Satellite objects to files (ascci or binary formats) into <directory>
+ extras  Remove objects on target RHN Satellite not present in source RHN Satellite
+ import  Import RHN Satellite object from files (ascii or binary) located into  <directory>
+ run     Execute Ruby 'plug-in' file 
+ sync    Synchronise objects from source RHN Satellite to target RHN Satellite
+ show    Generate configuration file examples
 eof
 
 @@config_syntax = <<eof
@@ -2015,6 +2132,10 @@ KickstartKeys:
   # Type of keys. Default value is GPG. Other value would be SSL
   key_type: GPG
 KickstartSnippets:
+  update: true
+Orgs:
+  update: true
+OrgTrusts:
   update: true
 SystemCustominfos:
   update: true
@@ -2105,7 +2226,7 @@ eof
         $DEBUG=true
       when '-h', '--help'
         Launcher.usage
-      when '--ssl'
+      when '-t', '--tls'
         @ssl=true
         overwrite_net_http
       when '-l', '--log=' 
@@ -2126,23 +2247,23 @@ eof
       when 'destroy'
         operation_size?(params, 1)
         @command='destroy'
-      when 'export'
+      when 'export',
         operation_size?(params, 3)
         @command='export'
         params.shift
-        @format=params[0].to_sym
-        params.shift
         @path=params[0]
+        params.shift
+        @format=params[0].to_sym
       when 'extras'
         operation_size?(params, 1)
         @command='extra'
-      when 'import'
+      when 'export', 'import'
         operation_size?(params, 3)
         @command='import'
         params.shift
-        @format=params[0].to_sym
-        params.shift
         @path=params[0]
+        params.shift
+        @format=params[0].to_sym
       when 'sync'
         operation_size?(params, 1)
         @command='sync'
