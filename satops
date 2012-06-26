@@ -489,7 +489,7 @@ module RHN
     end
   end  
  
-  class OrgTrust < Operation
+  class OrgTrusts < Operation
     def initialize(sat)
       super(sat) 
       define 'org.trusts.addTrust', :boolean
@@ -609,7 +609,7 @@ module RHN
   # Can be invoked with satellite object : sat.channel.create()
   class Satellite
     include Session
-    attr_reader :host, :log, :activationkey, :channel, :channelSoftware, :configchannel, :kickstart, :kickstartFilepreservation, :kickstartProfile, :kickstartProfileSystem, :kickstartProfileSoftware, :kickstartKeys, :kickstartSnippet, :org, :orgTrust, :system, :systemConfig, :systemCustominfo, :systemgroup, :user
+    attr_reader :host, :log, :activationkey, :channel, :channelSoftware, :configchannel, :kickstart, :kickstartFilepreservation, :kickstartProfile, :kickstartProfileSystem, :kickstartProfileSoftware, :kickstartKeys, :kickstartSnippet, :org, :orgTrusts, :system, :systemConfig, :systemCustominfo, :systemgroup, :user
 
     def initialize(sat_host, ssl, log)
       @host=sat_host
@@ -628,7 +628,7 @@ module RHN
       @kickstartKeys=KickstartKeys.new(self)
       @kickstartSnippet=KickstartSnippet.new(self)
       @org=Org.new(self)
-      @orgTrust=OrgTrust.new(self)
+      @orgTrusts=OrgTrusts.new(self)
       @system=System.new(self)
       @systemConfig=SystemConfig.new(self)
       @systemCustominfo=SystemCustominfo.new(self)
@@ -761,6 +761,7 @@ class Operation
         satobjects = YAML.load(f)
       end
     end
+
     dst_satobjects=create(sat)
     dst_satobjects.fetch
     unless satobjects.nil?
@@ -867,10 +868,14 @@ end
 class KickstartSnippets < Operation
 end
 
-class Orgs < Operation
+class Orgs < Operation 
+  class << self
+    attr_accessor :entitlements
+  end
+  @entitlements=false
 end
 
-class OrgTrusts < Operation
+class OrgTrusts < Operation 
 end
 
 class Systems < Operation
@@ -1533,8 +1538,18 @@ class Org
     org={}
     org.merge!(sat.org.getDetails(id))
     org.merge!({'users'=>sat.org.listUsers(id)})
-    org.merge!({'system_entitlements'=>sat.org.listSystemEntitlementsForOrg(id)})
-    org.merge!({'software_entitlements'=>sat.org.listSoftwareEntitlementsForOrg(id)})
+    if Orgs.entitlements
+      org.merge!({'system_entitlements'=>sat.org.listSystemEntitlementsForOrg(id)})
+
+      # Filter out empty software entitlements
+      software_entitlements=sat.org.listSoftwareEntitlementsForOrg(id)
+      if software_entitlements
+        software_entitlements.delete_if do |entitlement| 
+          entitlement['allocated'] == 0 && entitlement['allocated_flex'] == 0
+        end
+        org.merge!({'software_entitlements'=>software_entitlements})
+      end
+    end
     org
   end
     
@@ -1543,7 +1558,9 @@ class Org
     @name=org['name'] 
     @active_users=org['active_users'] # Number of active users in the organization.
     @systems=org['systems'] # Number of systems in the organization.
-    @trusts=org['trusts'] # Number of trusted organizations.
+    # API doesn't return trusts info wigh getDetails
+    # @trusts=org['trusts'] # Number of trusted organizations.
+    @users=org['users']
     @system_groups=org['system_groups'] # Number of system groups in the organization. (optional)
     @activation_keys=org['activation_keys'] # Number of activation keys in the organization. (optional)
     @kickstart_profiles=org['kickstart_profiles'] # Number of kickstart profiles in the organization. (optional)
@@ -1556,9 +1573,48 @@ class Org
     sat.org.delete(@id)
   end
 
+  def get_admin
+  @users.each do |user|
+    return user if user['is_org_admin']
+    end
+  end
+
   def create(sat)
-    # Cannot Export Organization admin details
-    # sat.org.create(@name, @adminLogin, ... )
+    # Create org from the first user with admin privileges
+    # Never handle default org (id=1)
+    if @id != 1 && @active_users >= 1
+      admin=get_admin
+      if admin
+        # Try to find that Org
+        org=sat.org.getDetails(@name)
+
+        unless org
+          # Create Org if doesn't exit
+          org=sat.org.create(@name, admin['login'], admin['login'], 'Mr.', admin['name'].split(',')[1], admin['name'].split(',')[0], admin['email'], false) 
+        end
+
+        # Entitlements option activated
+        if Orgs.entitlements 
+          unless org 
+            # case org already exist!
+            org=sat.org.getDetails(@name)
+          end
+
+          if org
+            # Systems Entitlements
+            @system_entitlements.each do |system_entitlement|
+              sat.org.setSystemEntitlements(org['id'], system_entitlement['label'], system_entitlement['allocated'])
+            end
+            
+            # Software Entitlements
+            @software_entitlements.each do |software_entitlement|
+              sat.org.setSoftwareEntitlements(org['id'], software_entitlement['label'], software_entitlement['allocated'])
+              sat.org.setSoftwareFlexEntitlements(org['id'], software_entitlement['label'], software_entitlement['allocated_flex'])
+            end
+          end
+        end
+      end
+    end
   end
 
   def update(sat)
@@ -1595,22 +1651,26 @@ class OrgTrust
   attr_reader :id
 
   def self.reader(sat, org)
-    org_trust={}
-    org_trust.merge!(org)
-    org_trust.merge!(sat.orgTrust.getDetails(org['org_id']))
-    org_trust
+    org_trusts=org
+    # Misnomer - listTrusts actually returns all orgs!
+    alltrusts=sat.orgTrusts.listTrusts(org['id'])
+    trusts=[]
+    alltrusts.each do |trust|
+      if trust['trustEnabled']
+        trusts << trust
+        # Broken - BZ#815715
+        # sat.orgTrusts.getDetails(trust['orgId'])
+        # ...
+      end
+    end
+    org_trusts.merge!({'trusted_orgs'=>trusts})
+    org_trusts
   end
-    
+
   def initialize(org)
-    @id=org['org_id']
-    @name=org['org_name']
-    @channels_provided=org['channels_provided']
-    @systems_migrated_from=org['systems_migrated_from']
-    @systems_migrated_to=org['systems_migrated_to']
-    @channels_consumed=org['channels_consumed']
-    @channels_provided=org['channels_provided']
-    @created=org['created']
-    @trusted_since=org['trusted_since']
+    @id=org['id']
+    @name=org['name']
+    @trusted_orgs=org['trusted_orgs']
   end
 
   def delete(sat)
@@ -1631,11 +1691,13 @@ class OrgTrustsSet < OperationSet
   end
 
   def fetch_all
-    orgs=[]
-    @sat.orgTrust.listOrgs.each do |org|
-      orgs << OrgTrust.new(OrgTrust.reader(@sat, org))
+    org_trusts=[]
+    @sat.org.listOrgs.each do |org|
+      if org['trusts'] > 0
+        org_trusts << OrgTrust.new(OrgTrust.reader(@sat, org))
+      end
     end
-    orgs
+    org_trusts
   end
 
   def include?(arg)
@@ -2095,19 +2157,21 @@ Commands:
 eof
 
 @@config_syntax = <<eof
-# SatOps configuration file example 
+# SatOps YAML comprehensive configuration file example
 #
-# This is a YAML formatted file
-# Respect indentations using spaces not tabulations
-# Boolean values can be either yes/no or true/false
+# Red Hat Network Satellite object groups
+#   Activation Keys, Kickstart Profile, etc, with their specific options
+#   An object group must be must be present to have a command executed against it
+# 
+#   Options
+#   'update' is a common option to allow corresponding object on target to be updated or not
+#   Options are not mandatory - Default values are always either false, '' (empty) or nil
 #
-# Receivers - left part of assignment are keywords: Do not change them!
-#
-# First level correspond to Red Hat Network Satellite objects: e.g Activation Keys, Kickstart Profile, etc.
-# This must be present (by default it's not!) to have operations to handle this group of RHN objects
-#   Following levels with indentation are options
-#   'update' is a common option to allow target object to be updated
-#   Default values are always false, '' (empty) or nil
+# Notes
+#   YAML Format
+#     Respect indentations using spaces not tabulations
+#     Boolean values can be either yes/no or true/false
+#     Receivers - left part of assignment are keywords: Do not change them!
 #
 Activationkeys:
   update: true
@@ -2135,8 +2199,8 @@ KickstartSnippets:
   update: true
 Orgs:
   update: true
-OrgTrusts:
-  update: true
+  # Entitlements list is very long, on top of many orgs 
+  entitlements: false
 SystemCustominfos:
   update: true
 Systems:
