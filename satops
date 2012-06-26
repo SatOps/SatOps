@@ -1570,7 +1570,7 @@ class Org
   end
 
   def delete(sat)
-    sat.org.delete(@id)
+    sat.org.delete(@id) unless @id == 1
   end
 
   def get_admin
@@ -1631,7 +1631,9 @@ class OrgsSet < OperationSet
   end
 
   def delete_all
-    delete(@sat.org.listOrgs)
+    self.fetch_all.each do |org|
+      org.delete(@sat)
+    end
   end
 
   def fetch_all
@@ -1673,21 +1675,28 @@ class OrgTrust
     @trusted_orgs=org['trusted_orgs']
   end
 
-  def delete(sat)
+  def create(sat)
+    @trusted_orgs.each do |trust|
+      sat.orgTrusts.addTrust(@id, trust['orgId'])
+    end
   end
 
-  def create(sat)
+  def delete(sat)
+    @trusted_orgs.each do |trusted|
+      sat.orgTrusts.removeTrust(@id, trusted['orgId'])
+    end
   end
 
   def update(sat)
+    self.create(sat)
   end
 end
 
 class OrgTrustsSet < OperationSet
-  def delete(list)
-  end
-
   def delete_all
+   self.fetch_all.each do |org|
+      org.delete(@sat)
+    end
   end
 
   def fetch_all
@@ -1924,7 +1933,6 @@ class User
     @assigned_system_groups=user['assigned_system_groups']
     @default_system_groups=user['default_system_groups']
   end
-
 
   def common_update(sat)
     # Enable/Disable
