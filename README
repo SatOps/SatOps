@@ -1,6 +1,7 @@
 SatOps
 ------
-Excecutes predifined commands on Red Hat Network Satellite objects using its XML/RPC API interface
+Ruby tool with commands to manipulate and automate Red Hat Network Satellite objects using via its XML/RPC API interface
+
 
 QUICKSTART
 ----------
@@ -12,25 +13,27 @@ QUICKSTART
 ./satops.rb show config > config.yaml
 ./satops.rb -s satellites.yaml -c config.yaml sync
 
-HOWTO
------
-For short version help, run satops without option
+MANUAL
+------
+For a short version help, run satops without option
 For more details, please refer to the included MANUAL
 
-DEVELOPMENT
------------
+DEVELOPMENTS
+------------
   clone command:
-         To be able to clone RHN Satellite objects with all their dependencies.
-         For instance replicate a clone based channel along its childs channel in one go.
-	 Much faster than with WebGUI!  
+         Although using re-mapping (export/rename/import) is an option,
+         find how to clone set of objects and their dependencies.
+         For instance replicate a based channel along with its childs channels in one go.
 
 LICENCE
 -------
 See COPYING file
 
+SOURCES
+-------
+https://github.com/SatOps/SatOps
 
-CONTACTS
---------
+CONTRIBUTORS
+------------
 Gilles   Dubreuil - gilles@redhat.com
 Aurelien Gouny    - aurelien@redhat.com
-
