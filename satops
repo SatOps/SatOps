@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-@@version='1.4.0'
+@@version='1.4.1'
 =begin header
    * Name: satops
    * Description: RHN Satellite API Operator
