@@ -934,17 +934,19 @@ class Activationkey
     @disabled=activation_key['disabled']
   end
 
-  def common_update(sat)
-    sat.activationkey.addEntitlements(@key, @entitlements)   
-    sat.activationkey.enableConfigDeployment(@key) if @config_deployment
-    sat.activationkey.addChildChannels(@key, @child_channel_labels)
-    sat.activationkey.addConfigChannels([@key], @config_channel_labels, true)
-    sat.activationkey.addPackages(@key, @packages) 
-    sat.activationkey.addServerGroups(@key, ActivationkeysSet.get_server_groups_ids(sat, @server_group_names))
+  def common_update(sat, key)
+    sat.activationkey.addEntitlements(key, @entitlements)   
+    sat.activationkey.enableConfigDeployment(key) if @config_deployment
+    sat.activationkey.addChildChannels(key, @child_channel_labels)
+    sat.activationkey.addConfigChannels([key], @config_channel_labels, true)
+    sat.activationkey.addPackages(key, @packages) 
+    sat.activationkey.addServerGroups(key, ActivationkeysSet.get_server_groups_ids(sat, @server_group_names))
   end
 
   def create(sat)
-    common_update(sat) if sat.activationkey.create(Activationkey.remove_id(@key), @description,  @base_channel_label, @usage_limit, @entitlements, @universal_default)
+    @base_channel_label="" if @base_channel_label == 'none' # RHN Default 
+     key=sat.activationkey.create(Activationkey.remove_id(@key), @description,  @base_channel_label, @usage_limit, @entitlements, @universal_default)
+    common_update(sat, key) if key
   end
    
   def update(sat)
@@ -959,7 +961,7 @@ class Activationkey
     sat.activationkey.removeServerGroups(@key, orig.server_group_ids)
     sat.activationkey.disableConfigDeployment(@key)
     sat.activationkey.removeEntitlements(@key, orig.entitlements) 
-    common_update(sat)
+    common_update(sat, @key)
   end
 end
 
@@ -1294,12 +1296,17 @@ class Kickstart
     sat.kickstart.disableProfile(@label, !@active)
 
     sat.kickstartProfile.setAdvancedOptions(@label, @advanced_options)
-    sat.kickstartProfile.setCustomOptions(@label, @custom_options) 
+    
+    custom_options=[]
+    @custom_options.each do |val|
+      custom_options << val['arguments']
+    end 
+    sat.kickstartProfile.setCustomOptions(@label, custom_options)
     sat.kickstartProfile.setVariables(@label, @variables) 
     sat.kickstartProfile.setChildChannels(@label, @child_channels)
     sat.kickstartProfile.setKickstartTree(@label, @tree_label)
-    sat.kickstartProfile.setLogging(@label, true, true)  # No API for logging option - Activate them by default
-
+    # No API to get logging options - let's activate them by default
+    sat.kickstartProfile.setLogging(@label, true, true)
     sat.kickstartProfileSystem.setLocale(@label, @locale['locale'], @locale['useUtc'])
     sat.kickstartProfileSystem.setSELinux(@label, @selinux) 
     sat.kickstartProfileSystem.setPartitioningScheme(@label, @partitioning_scheme)
@@ -1623,13 +1630,6 @@ class Org
 end
 
 class OrgsSet < OperationSet
-  def delete(list)
-    list=[list] if list.class != Array
-    list.each do |org|
-      @sat.org.delete(org)
-    end
-  end
-
   def delete_all
     self.fetch_all.each do |org|
       org.delete(@sat)
@@ -2209,6 +2209,8 @@ Orgs:
   update: true
   # Entitlements list is very long, on top of many orgs 
   entitlements: false
+OrgTrusts:
+  update: true
 SystemCustominfos:
   update: true
 Systems:
@@ -2319,6 +2321,12 @@ eof
       when 'destroy'
         operation_size?(params, 1)
         @command='destroy'
+      when 'sync'
+        operation_size?(params, 1)
+        @command='sync'
+      when 'extras'
+        operation_size?(params, 1)
+        @command='extra'
       when 'export',
         operation_size?(params, 3)
         @command='export'
@@ -2326,19 +2334,13 @@ eof
         @path=params[0]
         params.shift
         @format=params[0].to_sym
-      when 'extras'
-        operation_size?(params, 1)
-        @command='extra'
-      when 'export', 'import'
+      when 'import'
         operation_size?(params, 3)
         @command='import'
         params.shift
         @path=params[0]
         params.shift
         @format=params[0].to_sym
-      when 'sync'
-        operation_size?(params, 1)
-        @command='sync'
       when 'run'
         operation_size?(params, 2)
         @command='run'

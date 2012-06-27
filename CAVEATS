@@ -1,0 +1,15 @@
+The lack of lack of API stub make some fields not exported/sync/imported 
+(RFEs to be submitted to Bugzilla)
+
+  Kickstart Profile
+    Kickstart Details -> Details section (GUI): 
+    - Preserve ks.cfg
+    - Kernel options
+    - Post Kernel options
+    - Comments
+    - Organization Default Profile
+    System Details -> Kickstart Troubleshooting (GUI)
+    - Extra Kernel Parameters (for auto-kickstart only): 	
+    - Log non-chroot post script actions: 	
+    - Enable debugging in up2date/yum: 
+  
