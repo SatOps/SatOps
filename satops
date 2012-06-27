@@ -672,42 +672,6 @@ class Host
   end
 end
 
-class OperationSet
-  attr_reader :list
-
-  def initialize(sat)
-    @sat=sat
-    @list=[]
-  end
-
-  def extra(list)
-    delete(list)
-  end
-
-  def fetch
-    @list=fetch_all
-  end
-  
-  # Create include methods
-  %w{description id key label login name}.each do |method|
-    define_method("include_#{method}?".to_sym) do |o|
-      result=false
-      @list.each do |e|
-        result=true if eval("e.#{method} == o.#{method}")
-      end
-      result
-    end
-  end
-
-  def -(val)
-    result=[]
-    @list.each do |e|
-      result << e unless val.include?(e)
-    end
-    result
-  end
-end
-
 class Operation
   class << self
     attr_accessor :update
@@ -903,6 +867,50 @@ class Users < Operation
   @password=''
 end
 
+class OperationSet
+  attr_reader :list
+
+  def initialize(sat)
+    @sat=sat
+    @list=[]
+  end
+
+  def extra(list)
+    list.each do |obj|
+      obj.delete(@sat)
+    end
+  end
+
+  def delete_all
+    self.fetch_all.each do |obj|
+      obj.delete(@sat)
+    end
+  end
+
+  def fetch
+    @list=fetch_all
+  end
+
+  # Create include methods
+  %w{description id key label login name}.each do |method|
+    define_method("include_#{method}?".to_sym) do |o|
+      result=false
+      @list.each do |e|
+        result=true if eval("e.#{method} == o.#{method}")
+      end
+      result
+    end
+  end
+
+  def -(val)
+    result=[]
+    @list.each do |e|
+      result << e unless val.include?(e)
+    end
+    result
+  end
+end
+
 class Activationkey
   attr_reader :key, :child_channel_labels, :config_channel_labels, :packages, :entitlements, :server_group_ids
 
@@ -955,6 +963,10 @@ class Activationkey
     common_update(sat, key) if key
   end
    
+  def delete(sat)        
+    sat.activationkey.delete(@key) 
+  end
+
   def update(sat)
     # Sync base channel field
     orig=Activationkey.new(Activationkey.reader(sat, @key))
@@ -972,7 +984,7 @@ class Activationkey
 end
 
 class ActivationkeysSet < OperationSet
-  # Grab server group ids using names
+  # Grab server group IDs using names
   def self.get_server_groups_ids(sat, names)
     server_group_ids=[]
     names.each do |e|
@@ -981,7 +993,7 @@ class ActivationkeysSet < OperationSet
     server_group_ids
   end
 
-  # Grab server group names using ids
+  # Grab server group names using IDs
   def self.get_server_groups_names(sat, ids)
     server_group_names=Array.new
     ids.each do |e|
@@ -989,20 +1001,6 @@ class ActivationkeysSet < OperationSet
       server_group_names << server_group['name']
     end
     server_group_names
-  end
-
-  def delete(list)
-    list.each do |activation_key|
-      if activation_key.class == Activationkey
-        @sat.activationkey.delete(activation_key.key) 
-      else
-        @sat.activationkey.delete(activation_key['key']) 
-      end
-    end
-  end
-
-  def delete_all
-    delete(@sat.activationkey.list)
   end
 
   def fetch_all
@@ -1076,6 +1074,10 @@ class Channel
     # Software Channels must created via ISS (satellite-sync)
   end
 
+  def delete(sat)
+    sat.channelSoftware.delete(@label)
+  end
+
   def update(sat) 
     # Update details for non Red Hat channels
     if @provider_name != REDHAT
@@ -1110,20 +1112,9 @@ class Channel
 end
 
 class ChannelsSet < OperationSet
-  def delete(list)
-    list.each do |channel| 
-      # To Fix - Stuct vs object issue
-      if channel.class == Channel
-        @sat.channelSoftware.delete(channel.label)
-      else 
-        @sat.channelSoftware.delete(channel['label'])
-      end
-    end
-  end
-
   def delete_all
     # Flag must be set!
-    delete(@sat.channel.listMyChannels) if Channels.delete
+    super.delete_all if Channels.delete
   end
 
   def fetch_all 
@@ -1186,6 +1177,10 @@ class Configchannel
     end
   end  
 
+  def delete(sat)
+    sat.configchannel.deleteChannels([@label])
+  end
+
   def update(sat)
     sat.configchannel.update(@label, @name, @description)
 
@@ -1198,32 +1193,7 @@ class Configchannel
   end 
 end
 
-class ConfigchannelsSet < OperationSet
-  def delete(array_list)
-    list=Array.new
-    array_list.each do |configchannel|
-      # To Fix - When using delete_all from destroy we are handling struct not Channelconfig object!
-      if configchannel.class == Configchannel
-        list << configchannel.label 
-      else
-        list << configchannel['label']
-      end
-    end
-    @sat.configchannel.deleteChannels(list)
-  end
-
-  def delete_extra_files
-    if @delete_extra
-      target_files=Helpers.filter(target.configchannel.listFiles(cfg_channel['label']), 'path')
-      delete_file_list=target_files - source_files
-      target.configchannel.deleteFiles(cfg_channel['label'], delete_file_list) unless delete_file_list.empty?
-    end
-  end
-
-  def delete_all
-    self.delete(@sat.configchannel.listGlobals)
-  end
-  
+class ConfigchannelsSet < OperationSet  
   def fetch_all
     configchannels=[]
     @sat.configchannel.listGlobals.each do |config_channel|
@@ -1338,6 +1308,10 @@ class Kickstart
     end
   end
 
+  def delete(sat)
+    sat.kickstart.deleteProfile(@label)
+  end
+
   def update(sat)
     # Remove scripts first because there is no RHN API call for updating them 
     Helpers.filter(sat.kickstartProfile.listScripts(@label), 'id').each do |id|
@@ -1349,20 +1323,6 @@ class Kickstart
 end
 
 class KickstartsSet < OperationSet
-  def delete(list)
-    list.each do |ks|
-      if ks.class == Kickstart
-        @sat.kickstart.deleteProfile(ks.label)
-      else
-        @sat.kickstart.deleteProfile(ks['label']) 
-      end
-    end
-  end
-
-  def delete_all
-    delete(@sat.kickstart.listKickstarts)
-  end
-
   def fetch_all
     kickstarts=[]
     @sat.kickstart.listKickstarts.each do |ks|
@@ -1406,20 +1366,6 @@ class KickstartFilepreservation
 end
 
 class KickstartFilepreservationsSet < OperationSet
-  def delete(list)
-    list.each do |file_preserv|
-      if file_preserv.class == KickstartFilepreservation
-        @sat.kickstartFilepreservation.delete(file_preserv.name)
-      else
-        @sat.kickstartFilepreservation.delete(file_preserv['name']) 
-      end
-    end
-  end
-
-  def delete_all
-    delete(@sat.kickstartFilepreservation.listAllFilePreservations)
-  end
-
   def fetch_all
     file_perservations=[]
     @sat.kickstartFilepreservation.listAllFilePreservations.each do |file_preserv|
@@ -1457,20 +1403,6 @@ class KickstartKey
 end
 
 class KickstartKeysSet < OperationSet
-  def delete(list)
-    list.each do |ks_key|
-      if ks_key.class == KickstartKey
-        @sat.kickstartKeys.delete(ks_key.description) 
-      else
-        @sat.kickstartKeys.delete(ks_key['description']) 
-      end
-    end
-  end
-
-  def delete_all
-    delete(get_all)
-  end
-
   def fetch_all
     ks_keys=[]
     get_all.each do |ks|
@@ -1517,20 +1449,6 @@ class KickstartSnippet
 end
 
 class KickstartSnippetsSet < OperationSet
-  def delete(list)
-    list.each do |snippet|
-      if snippet.class == KickstartSnippet
-        @sat.kickstartSnippet.delete(snippet.name)
-      else
-        @sat.kickstartSnippet.delete(snippet['name'])
-      end
-    end
-  end
-
-  def delete_all
-    delete(@sat.kickstartSnippet.listCustom)
-  end
-
   def fetch_all
     snippets=[]
     @sat.kickstartSnippet.listCustom.each do |snippet|
@@ -1582,16 +1500,6 @@ class Org
     @software_entitlements=org['software_entitlements']
   end
 
-  def delete(sat)
-    sat.org.delete(@id) unless @id == 1
-  end
-
-  def get_admin
-  @users.each do |user|
-    return user if user['is_org_admin']
-    end
-  end
-
   def create(sat)
     # Create org from the first user with admin privileges
     # Never handle default org (id=1)
@@ -1630,18 +1538,22 @@ class Org
     end
   end
 
+  def delete(sat)
+    sat.org.delete(@id) unless @id == 1
+  end
+
+  def get_admin
+  @users.each do |user|
+    return user if user['is_org_admin']
+    end
+  end
+
   def update(sat)
     self.create(sat)
   end
 end
 
 class OrgsSet < OperationSet
-  def delete_all
-    self.fetch_all.each do |org|
-      org.delete(@sat)
-    end
-  end
-
   def fetch_all
     orgs=[]
     @sat.org.listOrgs.each do |org|
@@ -1699,12 +1611,6 @@ class OrgTrust
 end
 
 class OrgTrustsSet < OperationSet
-  def delete_all
-   self.fetch_all.each do |org|
-      org.delete(@sat)
-    end
-  end
-
   def fetch_all
     org_trusts=[]
     @sat.org.listOrgs.each do |org|
@@ -1836,20 +1742,6 @@ class SystemCustominfo
 end
 
 class SystemCustominfosSet < OperationSet
-  def delete(list)
-    list.each do |custom_info|
-      if custom_info.class == SystemCustominfos
-        @sat.systemCustominfo.deleteKey(custom_info.label) 
-      else
-        @sat.systemCustominfo.deleteKey(custom_info['label']) 
-      end
-    end
-  end
-
-  def delete_all
-    delete(@sat.systemCustominfo.listAllKeys)
-  end
-
   def fetch_all
     system_infos=[]
     @sat.systemCustominfo.listAllKeys.each do |custom_info|
@@ -1878,27 +1770,16 @@ class Systemgroup
     sat.systemgroup.create(@name, @description)
   end
 
+  def delete(sat)
+    sat.systemgroup.delete(@name) 
+  end
+
   def update(sat)
     sat.systemgroup.update(@name, @description)
   end
 end
 
 class SystemgroupsSet < OperationSet
-  def delete(list)
-    list.each do |sysgroup|
-      # To Fix - Stuct vs object issue
-      if sysgroup.class == Systemgroup
-        @sat.systemgroup.delete(sysgroup.name) 
-      else
-        @sat.systemgroup.delete(sysgroup['name']) 
-      end
-    end
-  end
-
-  def delete_all
-    delete(@sat.systemgroup.listAllGroups)
-  end
-
   def fetch_all
     sysgroups=[]
     @sat.systemgroup.listAllGroups.each do |sysgroup|
@@ -2236,7 +2117,9 @@ Users:
     - admin
     - satadmin
   # Default password used when creating user on target
-  password: ""
+  # It cannot be blank
+  # When not using password then make sure PAM is activated 
+  password: "rhnapi"
 eof
 
  @@satellites_syntax = <<eof
