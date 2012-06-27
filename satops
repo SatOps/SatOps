@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-@@version='1.4.1'
+@@version='1.4.2'
 =begin header
    * Name: satops
    * Description: RHN Satellite API Operator
@@ -192,13 +192,13 @@ module RHN
     def trace_info(*params)
       str=""
       params.each { |p| str << "#{p}:" } 
-      @sat.log.info("#{@sat.host.name}:#{str}")
+      @sat.log.info("#{@sat.host.login}@#{@sat.host.name}:#{str}")
     end
 
     def trace_warn(*params)
       str=""
       params.each { |p| str << "#{p}:" } 
-      @sat.log.warn("#{@sat.host.name}:#{str}")
+      @sat.log.warn("#{@sat.host.login}@#{@sat.host.name}:#{str}")
     end
   end
   
