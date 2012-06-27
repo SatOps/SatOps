@@ -759,7 +759,7 @@ class Operation
     satobjects=[] 
     case type
     when :mrb
-      File.open("#{path}/#{self.class}") do |f|
+      File.open("#{path}/#{self.class}.mrb") do |f|
         satobjects = Marshal.load(f)
       end
     when :yaml
