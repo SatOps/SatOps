@@ -1,6 +1,6 @@
 SatOps
 ------
-Ruby tool with commands to manipulate and automate Red Hat Network Satellite objects using via its XML/RPC API interface
+Ruby tool with commands to manipulate and automate Red Hat Network Satellite objects using its XML/RPC API interface
 
 
 QUICKSTART
@@ -23,7 +23,8 @@ DEVELOPMENTS
   clone command:
          Although using re-mapping (export/rename/import) is an option,
          find how to clone set of objects and their dependencies.
-         For instance replicate a based channel along with its childs channels in one go.
+         For instance replicate a based channel along with its childs channels
+         in one go.
 
 LICENCE
 -------

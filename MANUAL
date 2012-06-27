@@ -148,10 +148,10 @@ EXAMPLES
        ./satops.rb -s satellites -c config sync
 
        # Run ASCII export  operation with logs to file
-       ./satops.rb -s satellites -c config -l export.log export ascii /tmp/satops-export/
+       ./satops.rb -s satellites -c config -l export.log export /tmp/satops-export/ ascii 
 
        # Run binary import operation with logs to file
-       ./satops.rb -s satellites -c config -l import.log import bin /tmp/satops-export/
+       ./satops.rb -s satellites -c config -l import.log import /tmp/satops-export/ bin 
 
        # Destroy operation with logs to standard output
        ./satops.rb -s satellites -c config destroy

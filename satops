@@ -26,23 +26,29 @@
 
 =begin rdoc
 Commands provided as parameters at command line are filtered by the Launcher class.
-The latter creates a SatOperator object coordinating the operation to execute.
+The latter creates a SatOperator object coordinating the operation.
 
-The Operation Groups are matching RHN Satellite objects such as Activation Keys, Software channels, etc.
+The "Operation" Groups correspond to RHN Satellite objects such as Activation Keys, Software channels, etc.
 
 The SatOperator controls the initial command execution flow for each Operation group.
 Every Operation Group builds OperationSet objects, i.e RHN Satellite Set of objects, providing interface to RHN Satellite API to manipulate list of those objects.
 
 At lower level, are RHN Satellite equivalent objects to be copied from or to a Satellite.
 
-Here is an example with RHN Satellite Activation keys.
-Activationkey is the Class mapping RHN Satellite objects. Low level
-ActivationkeysSet - OperationSet subclass - Notice plural before the Set
-                     Manipulate the low level objects Activationkey
-Activationkeys - Operation subclass - High level view, wrapping commands (export/import/sync/etc) to execute onto the ActivationkeysSet or Activationkey objects.
+Example with RHN Satellite Activation keys.
+Activationkey - Class mapping with RHN Satellite objects 
+   Low level as it interface with RHN API
 
-Here the exhaustive list of operations classes:
-Activationkeys, Channels, Configchannels, Kickstarts, KickstartFilepreservations, KickstartKeys, KickstartSnippets, Systems, SystemCustominfos, Systemgroups, Users
+ActivationkeysSet - Notice plural before the Set
+  Subclass of OperationSet 
+  Wrap/interface/group Activationkey objects 
+
+Activationkeys 
+  Subclass of Operation 
+  High level view, interfacing commands (export/import/sync,etc) to execute onto the ActivationkeysSet or Activationkey objects.
+
+List of all Operations classes:
+Activationkeys, Channels, Configchannels, Kickstarts, KickstartFilepreservations, KickstartKeys, KickstartSnippets, Orgs, OrgTrusts, Systems, SystemCustominfos, Systemgroups, Users
 =end
 
 require "logger"
@@ -2133,35 +2139,37 @@ class Launcher
 satops #{@@version}
 
 Usage: 
- satops show sat | config
- satops -s <satellites file> -c <config file> [-dltw] destroy
- satops -s <satellites file> -c <config file> [-dltw] export <directory> ascii | bin
- satops -s <satellites file> -c <config file> [-dltw] import <directory> ascii | bin
- satops -s <satellites file> -c <config file> [-dltw] run <Ruby file>
- satops -s <satellites file> -c <config file> [-dltw] extras
- satops -s <satellites file> -c <config file> [-dltw] sync
- satops [-h]
+  satops show sat | config
+  satops -s <sat file> -c <config file> [-dltw] destroy
+  satops -s <sat file> -c <config file> [-dltw] export <directory> ascii | bin
+  satops -s <sat file> -c <config file> [-dltw] import <directory> ascii | bin
+  satops -s <sat file> -c <config file> [-dltw] run <Ruby file>
+  satops -s <sat file> -c <config file> [-dltw] extras
+  satops -s <sat file> -c <config file> [-dltw] sync
+  satops [-h]
 
-Mandatory Configuration files:
- Satellites file: Source and Target RHN Satellites definition
- Configuration file: RHN Satellite Objects are not treated unless present in the configuration file
- Use 'show sat|config' command for generating either templates
+Mandatory Configuration:
+  Sat file:    Source and Target RHN Satellites definition
+  Config file: RHN Satellite objects and options 
+               Objects must be included to be processed
+  Use 'show sat|config' command for generating either templates
+
 Options:
- -d, --debug        Activate debug output
- -l, --log          Append logs to file. By default logs go to Standard Output
- -t, --tls          Activate SSL (HTTPS) sessions
- -w, --warnings     Activate Ruby Verbose 
+  -d, --debug        Activate debug output
+  -l, --log          Append logs to file. By default logs go to Standard Output
+  -t, --tls          Activate SSL (HTTPS) sessions
+  -w, --warnings     Activate Ruby Verbose 
 
- -h, --help         Display Version number, help and exit
+  -h, --help         Display Version number, help and exit
 
 Commands:
- destroy Delete all objects on target RHN Satellite  
- export  Export RHN Satellite objects to files (ascci or binary formats) into <directory>
- extras  Remove objects on target RHN Satellite not present in source RHN Satellite
- import  Import RHN Satellite object from files (ascii or binary) located into  <directory>
- run     Execute Ruby 'plug-in' file 
- sync    Synchronise objects from source RHN Satellite to target RHN Satellite
- show    Generate configuration file examples
+  destroy  Delete all objects on target RHN Satellite  
+  export   Export RHN Satellite objects to files (ascci or binary formats) into <directory>
+  extras   Remove objects on target RHN Satellite not present in source RHN Satellite
+  import   Import RHN Satellite object from files (ascii or binary) located into  <directory>
+  run      Execute Ruby 'plug-in' file 
+  sync     Synchronise objects from source RHN Satellite to target RHN Satellite
+  show     Generate configuration file examples
 eof
 
 @@config_syntax = <<eof
