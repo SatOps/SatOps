@@ -2016,7 +2016,7 @@ class SatOperator
 end
 
 class Launcher
-  @@syntax = <<eof 
+  @@syntax = <<eof
 satops #{@@version}
 
 Usage: 
@@ -2095,8 +2095,7 @@ KickstartKeys:
 KickstartSnippets:
   update: true
 Orgs:
-  update: true
-  # Entitlements list is very long, on top of many orgs 
+  update: true 
   entitlements: false
 OrgTrusts:
   update: true
@@ -2149,7 +2148,7 @@ eof
     exit
   end
  
-  def operation_size?(param, size) 
+  def operation_size?(param, size)
     if param.size != size
       Launcher.usage
     end
@@ -2182,7 +2181,7 @@ eof
       Launcher.usage
     end
 
-    while !params.empty?
+    unless params.empty?
       case params[0]
       when '-c', '--config=' 
         params.shift
@@ -2218,7 +2217,7 @@ eof
       when 'extras'
         operation_size?(params, 1)
         @command='extra'
-      when 'export',
+      when 'export'
         operation_size?(params, 3)
         @command='export'
         params.shift
@@ -2238,6 +2237,8 @@ eof
         params.shift
         @file_to_run=params[0]
       when 'show'
+        p params[0]
+        p params
         params.shift
         case params[0] 
         when 'sat'
