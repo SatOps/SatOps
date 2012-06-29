@@ -3,6 +3,11 @@ SatOps
 Ruby tool with commands to manipulate and automate Red Hat Network Satellite objects using its XML/RPC API interface
 
 
+REQUIREMENTS
+------------
+SatOps requires ruby version 1.8 or newer.
+
+
 QUICKSTART
 ----------
 1 - Generate source and target satellites definitions file
@@ -13,10 +18,12 @@ QUICKSTART
 ./satops.rb show config > config.yaml
 ./satops.rb -s satellites.yaml -c config.yaml sync
 
+
 MANUAL
 ------
 For a short version help, run satops without option
 For more details, please refer to the included MANUAL
+
 
 DEVELOPMENTS
 ------------
@@ -26,13 +33,16 @@ DEVELOPMENTS
          For instance replicate a based channel along with its childs channels
          in one go.
 
+
 LICENCE
 -------
 See COPYING file
 
+
 SOURCES
 -------
 https://github.com/SatOps/SatOps
+
 
 CONTRIBUTORS
 ------------

@@ -26,11 +26,11 @@ DESCRIPTION
 
        The export/import feature:
          The second main feature is to be able to do logical export of RHN
-         Satellite content. Exports provides backups, data remapping,
+         Satellite content. Exports provide backups, data remapping,
          disconnected remote site synchronisation using the import command.
 
-       The satps program can interfaces with up to two RHN Satellite servers,
-       altough some commands only access one server 
+       The satops program can interfaces with up to two RHN Satellite servers,
+       although some commands only access one server 
          A Source
            The Source RHN Satellite data is never modified 
          A Target
@@ -38,7 +38,7 @@ DESCRIPTION
 
        Two files are mandatory to get the program running:
 	 - A definition file for Satellite details
-         - A configuraion file, specifying objects to operate
+         - A configuration file, specifying objects to operate
          Refer to the show command to generate examples
 
        List of Objects manipulated by the satops tool:
@@ -103,7 +103,7 @@ COMMANDS
           
        Show
             The show command generates configuration examples
-            The content is provided on the standard outpout.
+            The content is provided on the standard output.
 
             Use sat option to dump Satellite definition example to be used by -s
             option.
@@ -115,14 +115,14 @@ OPTIONS
        -s <sat-file>
 	    Definition file for Satellite details such as hosts, user and passwords
             This is a mandatory file.
-            This is a YAML formated file.
+            This is a YAML formatted file.
             Refer to the example generated with the show command for more details.
       
        -c <config_file>
             The config' file determines which objects to run or not.
             It also contains specific options per object class
             This is a mandatory file.
-            This is a YAML formated file.
+            This is a YAML formatted file.
             Refer to the example generated with the show command for more details.
 
        -d, --debug
