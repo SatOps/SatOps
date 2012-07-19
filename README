@@ -5,7 +5,13 @@ Ruby tool with commands to manipulate and automate Red Hat Network Satellite obj
 
 REQUIREMENTS
 ------------
-SatOps requires ruby version 1.8 or newer.
+SatOps requires Ruby version 1.8.7 or higher
+  The following versions have been used for latest tests: 
+    - 1.8.7p358
+    - 1.9.3p194
+
+RHN Satellite 5.4.1 with latest updates or higher
+  Due to the continuing development efforts of the RHN Satellite engineering team the API is changing over time to include fixes and enhancement. 
 
 
 QUICKSTART
