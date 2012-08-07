@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
-@@version='1.4.2'
+@@version='1.4.3'
 =begin header
    * Name: satops
    * Description: RHN Satellite API Operator
    * URL: https://github.com/SatOps/SatOps
-   * Date: 27 Jun 2012 
+   * Date: 07 Aug 2012 
    * Author: Gilles Dubreuil <gilles@redhat.com>
    * License: Copyright 2011, 2012 Gilles Dubreuil 
 
@@ -2181,9 +2181,9 @@ eof
       Launcher.usage
     end
 
-    unless params.empty?
+    while !params.empty?
       case params[0]
-      when '-c', '--config=' 
+      when '-c', '--config='
         params.shift
         @config_file=params[0]
       when '-d', '--debug'
