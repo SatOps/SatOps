@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-@@version='1.4.3'
+@@version='1.4.4'
 =begin header
    * Name: satops
    * Description: RHN Satellite API Operator
@@ -2181,7 +2181,7 @@ eof
       Launcher.usage
     end
 
-    while !params.empty?
+    until params.empty?
       case params[0]
       when '-c', '--config='
         params.shift
