@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-@@version='1.4.4'
+@@version='1.4.5'
 =begin header
    * Name: satops
    * Description: RHN Satellite API Operator
@@ -2237,8 +2237,6 @@ eof
         params.shift
         @file_to_run=params[0]
       when 'show'
-        p params[0]
-        p params
         params.shift
         case params[0] 
         when 'sat'
