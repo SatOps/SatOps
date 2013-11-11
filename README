@@ -1,22 +1,30 @@
 SatOps
 ------
-Ruby tool with commands to manipulate and automate Red Hat Network Satellite objects using its XML/RPC API interface
+Ruby tool with commands to manipulate and automate Red Hat Satellite objects using its XML/RPC API interface
 
 
 REQUIREMENTS
 ------------
-SatOps requires Ruby version 1.8.7 or higher
-  The following versions have been used for latest tests: 
-    - 1.8.7p358
-    - 1.9.3p194
+- Ruby versions
+  We have tested
+  - 1.8.7p358
+  - 1.9.3p194
+  - 2.0.0p247
 
-RHN Satellite 5.4.1 with latest updates or higher
-  Due to the continuing development efforts of the RHN Satellite engineering team the API is changing over time to include fixes and enhancement. 
+- Red Hat (Network) Satellite versions
+  - RHN Satellite 5.4.1 with latest updates
+  - RHN Satellite 5.5
+  - RH Satellite 5.6
+
+
+INSTALL
+-------
+gem install satops
 
 
 QUICKSTART
 ----------
-1 - Generate source and target satellites definitions file
+1 - Generate source and target satellites definition file
 2 - Generate configuration file
 3 - Launch satops. For instance to sync a target satellite from a source
 
@@ -33,16 +41,13 @@ For more details, please refer to the included MANUAL
 
 DEVELOPMENTS
 ------------
-  clone command:
-         Although using re-mapping (export/rename/import) is an option,
-         find how to clone set of objects and their dependencies.
-         For instance replicate a based channel along with its childs channels
-         in one go.
+- Due to the continuing development efforts of the RH Satellite engineering
+  team the API is changing over time to include fixes and enhancement.
 
 
 LICENCE
 -------
-See COPYING file
+GNU GPLV3 - See COPYING file
 
 
 SOURCES
