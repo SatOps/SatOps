@@ -38,13 +38,17 @@ Manual download:
 
 QUICKSTART
 ----------
-1 - Generate source and target satellites definition file
-2 - Generate configuration file
-3 - Launch satops. For instance to sync a target satellite from a source
+1. Generate source and target satellites definition file:
+   $ satops show sat > satellites.yaml
+2. Edit the file to adjust your RH Satellites details
+3. Generate options file:
+   $ satops show config > options.yaml
+4. Edit the options.yaml file if needed
+5. Launch satops.
+   $ satops -s satellites.yaml -c options.yaml <command> 
 
-$ satops show sat > satellites.yaml
-$ satops show config > config.yaml
-$ satops -s satellites.yaml -c config.yaml sync
+   For instance to synchronise a target satellite from a source:
+   $ satops -s satellites.yaml -c options.yaml sync
 
 
 MANUAL
