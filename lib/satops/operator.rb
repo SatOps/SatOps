@@ -631,7 +631,7 @@ class Kickstart
     end
 
     @scripts.each do |script|
-      sat.kickstartProfile.addScript(@label, script['contents'], script['interpreter'], script['script_type'], script['chroot'], script['template'])
+      sat.kickstartProfile.addScript(@label, script['id'],  script['contents'], script['interpreter'], script['script_type'], script['chroot'], script['template'])
     end
   end
 
