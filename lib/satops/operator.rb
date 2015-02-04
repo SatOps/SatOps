@@ -1178,11 +1178,12 @@ class User
       password=Users.password
       sat.user.create(@login, password, @first_name, @last_name, @email, 0)
     end
+    sat.user.setDetails(@login, {'prefix' => @prefix}) unless @prefix.empty?
     common_update(sat)
   end
 
   def update(sat)
-    @prefix='' unless @prefix
+    @prefix='' unless !@prefix.empty!
     # We ignore password update - Ain't any API for it!
     sat.user.setDetails(@login, {'first_name' => @first_name, 'last_name' => @last_name, 'email' => @email, 'prefix' => @prefix})
     sat.user.listRoles(login).each do |role|
