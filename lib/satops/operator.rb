@@ -1194,13 +1194,16 @@ end
 
 class UsersSet < OperationSet
   def delete(list)
-    Users.exclude.each do |exclude|
-      list.delete_if { |u| u == exclude }
-    end
     list.each do |user|
-      @sat.user.delete(user.login)
+      case user.class
+      when Hash
+        @sat.user.delete(user['login']) unless Users.exclude.include?(user['login'])
+      when User
+        @sat.user.delete(user.login) unless Users.exclude.include?(user.login)
+      end
     end
   end
+
 
   def delete_all
     delete(Helpers.filter(@sat.user.listUsers, 'login'))
