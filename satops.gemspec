@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'satops'
-  s.version     = '1.5.7'
+  s.version     = '5.7.1'
   s.date        = '2015-02-04'
   s.summary     = "Manipulate Red Hat Network Satellite content via its XML/RPC API"
   s.description = "Tool to export/import all Red Hat Satellite objects"
