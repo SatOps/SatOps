@@ -8,19 +8,20 @@ Commands such as  export, import and sync help handle RH Satellite content:
 
 REQUIREMENTS
 ------------
-- Red Hat (Network) Satellite 
-  - RHN Satellite 5.4.1 with latest updates
-  - RHN Satellite 5.5
-  - RH Satellite 5.6
+- Rubygems
+  $ yum install rubygems
 
-- Ruby versions tested
+Note: On RHEL6.x, Rubygems is available from following channel:
+  - RHEL Server Optional (v. 6 64-bit x86_64)
+
+- Red Hat Satellite 5.7
+
+- Ruby version 1.8+
+  The Ruby versions tested:
   - 1.8.7p358
   - 1.9.3p194
   - 2.0.0p247
-
-- Rubygems
-  - On RHEL6.x, Rubygems is available from RHEL Server Optional (v. 6 64-bit x86_64) channel
-    $ yum install rubygems
+  - 2.1.5p273
 
 
 INSTALL
@@ -28,7 +29,7 @@ INSTALL
 Directly from Internet:
 $ gem install satops
 
-or 
+or
 
 Manual download:
 1. Grab the latest version from https://rubygems.org/gems/satops
@@ -45,7 +46,7 @@ QUICKSTART
    $ satops show config > options.yaml
 4. Edit the options.yaml file if needed
 5. Launch satops.
-   $ satops -s satellites.yaml -c options.yaml <command> 
+   $ satops -s satellites.yaml -c options.yaml <command>
 
    For instance to synchronise a target satellite from a source:
    $ satops -s satellites.yaml -c options.yaml sync
